@@ -29,7 +29,6 @@ public class CoordinatesRepository {
         em.persist(coordinates);
     }
 
-    // Обновляем версию до формирования ответа клиенту.
     public void flush() {
         em.flush();
     }

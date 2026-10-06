@@ -13,12 +13,9 @@ public class AppUserRepository {
 
     public AppUser findByUsername(String username) {
         try {
-            return em.createQuery(
-                    "SELECT u FROM AppUser u WHERE u.username = :username",
-                    AppUser.class
-            )
-            .setParameter("username", username)
-            .getSingleResult();
+            return em.createQuery("SELECT u FROM AppUser u WHERE u.username = :username", AppUser.class)
+                    .setParameter("username", username)
+                    .getSingleResult();
         } catch (NoResultException e) {
             return null;
         }

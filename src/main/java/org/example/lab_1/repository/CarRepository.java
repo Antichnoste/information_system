@@ -19,7 +19,9 @@ public class CarRepository {
 
     public Car findById(long id) {
         Car car = em.find(Car.class, id);
-        if (car == null) throw new WebApplicationException(GlobalExceptionHandler.response(404, "Автомобиль не найден"));
+        if (car == null) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(404, "Автомобиль не найден"));
+        }
         return car;
     }
 

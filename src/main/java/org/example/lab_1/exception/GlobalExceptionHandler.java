@@ -28,7 +28,6 @@ public class GlobalExceptionHandler implements ExceptionMapper<Exception> {
     @Override
     public Response toResponse(Exception exception) {
         for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
-
             if (cause instanceof OptimisticLockException) {
                 return response(409, "Объект уже изменён или удалён другим пользователем. Закройте форму и откройте её заново.");
             }
@@ -82,7 +81,8 @@ public class GlobalExceptionHandler implements ExceptionMapper<Exception> {
                         .build();
             }
 
-            if (cause instanceof SQLException) {
+            if (cause instanceof SQLException error && error.getSQLState() != null
+                    && error.getSQLState().startsWith("23")) {
                 return response(409,"Операция нарушает ограничения данных или связей");
             }
         }

@@ -15,7 +15,7 @@ import org.example.lab_1.model.WeaponType;
 
 @ApplicationScoped
 public class HumanRepository {
-    private static final String SELECT = "SELECT h FROM HumanBeing h LEFT JOIN FETCH h.car c JOIN FETCH h.coordinates";
+    private static final String SELECT = "SELECT h FROM HumanBeing h LEFT JOIN h.car c LEFT JOIN FETCH h.car JOIN FETCH h.coordinates";
 
     @PersistenceContext(unitName = "humanity")
     EntityManager em;
