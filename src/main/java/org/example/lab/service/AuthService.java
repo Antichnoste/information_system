@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.example.lab.dto.AuthRequest;
 import org.example.lab.model.AppUser;
+import org.example.lab.model.UserRole;
 import org.example.lab.repository.AppUserRepository;
 import org.example.lab.security.Passwords;
 
@@ -24,6 +25,7 @@ public class AuthService {
         AppUser user = new AppUser();
         user.setUsername(input.getUsername());
         user.setPasswordHash(Passwords.hash(input.getPassword()));
+        user.setRole(UserRole.USER);
         appUserRepository.save(user);
         return user.getUsername();
     }
