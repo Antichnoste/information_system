@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Broken JSON",
+    "coordinates": {
+      "x": 30,
+      "y": 2.5
+    }
+    "realHero": true,
+    "hasToothpick": false,
+    "impactSpeed": 5,
+    "soundtrackName": "Syntax Theme",
+    "weaponType": "PISTOL"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Valid First Record",
+    "coordinates": {
+      "x": 20,
+      "y": 1.5
+    },
+    "realHero": false,
+    "hasToothpick": false,
+    "impactSpeed": 10,
+    "soundtrackName": "First Theme",
+    "weaponType": "HAMMER"
+  },
+  {
+    "name": "Invalid Second Record",
+    "coordinates": {
+      "x": 21,
+      "y": -629
+    },
+    "realHero": true,
+    "hasToothpick": true,
+    "impactSpeed": 30,
+    "soundtrackName": "Second Theme",
+    "weaponType": "SHOTGUN"
+  }
+]

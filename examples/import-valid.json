@@ -1,0 +1,33 @@
+[
+  {
+    "name": "Neo",
+    "coordinates": {
+      "x": 10,
+      "y": 5.5
+    },
+    "realHero": true,
+    "hasToothpick": false,
+    "car": {
+      "name": "Lada",
+      "cool": false,
+      "color": "RED"
+    },
+    "mood": "SORROW",
+    "impactSpeed": 20,
+    "soundtrackName": "Theme",
+    "minutesOfWaiting": 15,
+    "weaponType": "PISTOL"
+  },
+  {
+    "name": "Trinity",
+    "coordinates": {
+      "x": 10,
+      "y": 5.5
+    },
+    "realHero": true,
+    "hasToothpick": true,
+    "impactSpeed": 25,
+    "soundtrackName": "Another Theme",
+    "weaponType": "RIFLE"
+  }
+]
