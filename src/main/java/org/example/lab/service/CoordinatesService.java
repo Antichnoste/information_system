@@ -2,6 +2,7 @@ package org.example.lab.service;
 import org.example.lab.exception.GlobalExceptionHandler;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import org.example.lab.dto.CoordinatesResponse;
 import org.example.lab.mapper.CoordinatesMapper;
 import org.example.lab.repository.HumanRepository;
 import org.example.lab.repository.CoordinatesRepository;
+import org.example.lab.realtime.UpdateResource;
 
 @ApplicationScoped
 @Transactional
@@ -23,6 +25,8 @@ public class CoordinatesService {
     CoordinatesRepository coordinatesRepository;
     @Inject
     CoordinatesMapper mapper;
+    @Inject
+    Event<UpdateResource> changes;
 
     public List<CoordinatesResponse> list() {
         List<CoordinatesResponse> result = new ArrayList<>();
@@ -41,6 +45,7 @@ public class CoordinatesService {
         coordinates.x = input.getX();
         coordinates.y = input.getY();
         coordinatesRepository.save(coordinates);
+        changes.fire(UpdateResource.COORDINATES);
         return mapper.toResponse(coordinates);
     }
 
@@ -55,6 +60,8 @@ public class CoordinatesService {
         coordinates.x = input.getX();
         coordinates.y = input.getY();
         coordinatesRepository.flush();
+        changes.fire(UpdateResource.COORDINATES);
+        changes.fire(UpdateResource.HUMANS);
         return mapper.toResponse(coordinates);
     }
 
@@ -72,5 +79,7 @@ public class CoordinatesService {
             human.coordinates = replacement;
         }
         coordinatesRepository.delete(coordinates);
+        changes.fire(UpdateResource.COORDINATES);
+        changes.fire(UpdateResource.HUMANS);
     }
 }

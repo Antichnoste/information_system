@@ -10,9 +10,6 @@ import java.util.List;
 import org.example.lab.dto.CarRequest;
 import org.example.lab.dto.CarResponse;
 import org.example.lab.service.CarService;
-import org.example.lab.realtime.LiveUpdates;
-import static org.example.lab.realtime.LiveUpdates.Resource.CARS;
-import static org.example.lab.realtime.LiveUpdates.Resource.HUMANS;
 
 @Path("cars")
 @RequestScoped
@@ -21,8 +18,6 @@ import static org.example.lab.realtime.LiveUpdates.Resource.HUMANS;
 public class CarController {
     @Inject
     CarService carService;
-    @Inject
-    LiveUpdates updates;
 
     @GET
     public List<CarResponse> cars() {
@@ -37,10 +32,8 @@ public class CarController {
 
     @POST
     public Response createCar(@NotNull(message = "Тело запроса обязательно") @Valid CarRequest input) {
-        CarResponse created = carService.create(input);
-        updates.publish(CARS);
         return Response.status(201)
-                .entity(created)
+                .entity(carService.create(input))
                 .build();
     }
 
@@ -50,9 +43,7 @@ public class CarController {
             @PathParam("id") long id, 
             @NotNull(message = "Тело запроса обязательно") @Valid CarRequest input) {
 
-        CarResponse updated = carService.update(id, input);
-        updates.publish(CARS, HUMANS);
-        return updated;
+        return carService.update(id, input);
     }
 
     @DELETE
@@ -62,6 +53,5 @@ public class CarController {
             @QueryParam("replacementId") Long replacement) {
 
         carService.delete(id, replacement);
-        updates.publish(CARS, HUMANS);
     }
 }

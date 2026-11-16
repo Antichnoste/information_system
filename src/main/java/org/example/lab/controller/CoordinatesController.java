@@ -10,9 +10,6 @@ import java.util.List;
 import org.example.lab.dto.CoordinatesRequest;
 import org.example.lab.dto.CoordinatesResponse;
 import org.example.lab.service.CoordinatesService;
-import org.example.lab.realtime.LiveUpdates;
-import static org.example.lab.realtime.LiveUpdates.Resource.COORDINATES;
-import static org.example.lab.realtime.LiveUpdates.Resource.HUMANS;
 
 @Path("coordinates")
 @RequestScoped
@@ -21,8 +18,6 @@ import static org.example.lab.realtime.LiveUpdates.Resource.HUMANS;
 public class CoordinatesController {
     @Inject
     CoordinatesService coordinatesService;
-    @Inject
-    LiveUpdates updates;
 
     @GET
     public List<CoordinatesResponse> coordinates() {
@@ -37,10 +32,8 @@ public class CoordinatesController {
 
     @POST
     public Response createCoordinates(@NotNull(message = "Тело запроса обязательно") @Valid CoordinatesRequest input) {
-        CoordinatesResponse created = coordinatesService.create(input);
-        updates.publish(COORDINATES);
         return Response.status(201)
-                .entity(created)
+                .entity(coordinatesService.create(input))
                 .build();
     }
 
@@ -49,9 +42,7 @@ public class CoordinatesController {
     public CoordinatesResponse updateCoordinates(
             @PathParam("id") long id,
             @NotNull(message = "Тело запроса обязательно") @Valid CoordinatesRequest input) {
-        CoordinatesResponse updated = coordinatesService.update(id, input);
-        updates.publish(COORDINATES, HUMANS);
-        return updated;
+        return coordinatesService.update(id, input);
     }
 
     @DELETE
@@ -60,6 +51,5 @@ public class CoordinatesController {
             @PathParam("id") long id,
             @QueryParam("replacementId") Long replacement) {
         coordinatesService.delete(id, replacement);
-        updates.publish(COORDINATES, HUMANS);
     }
 }

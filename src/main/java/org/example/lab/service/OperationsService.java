@@ -2,6 +2,7 @@ package org.example.lab.service;
 import org.example.lab.exception.GlobalExceptionHandler;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import org.example.lab.dto.OperationResponse;
 import org.example.lab.mapper.HumanMapper;
 import org.example.lab.repository.HumanRepository;
 import org.example.lab.repository.CarRepository;
+import org.example.lab.realtime.UpdateResource;
 
 @ApplicationScoped
 @Transactional
@@ -25,6 +27,8 @@ public class OperationsService {
     CarRepository carRepository;
     @Inject
     HumanMapper mapper;
+    @Inject
+    Event<UpdateResource> changes;
 
     // Удалить первого найденного персонажа с заданным оружием.
     public OperationResponse deleteByWeapon(WeaponType weapon) {
@@ -37,6 +41,7 @@ public class OperationsService {
             return new OperationResponse(0, null);
         }
         humanRepository.delete(human);
+        changes.fire(UpdateResource.HUMANS);
         return new OperationResponse(1, human.id);
     }
 
@@ -65,6 +70,9 @@ public class OperationsService {
         for (HumanBeing human : humans) {
             human.mood = Mood.SORROW;
         }
+        if (!humans.isEmpty()) {
+            changes.fire(UpdateResource.HUMANS);
+        }
         return new OperationResponse(humans.size(), null);
     }
 
@@ -86,6 +94,8 @@ public class OperationsService {
         for (HumanBeing human : humansWithoutCar) {
             human.car = kalina;
         }
+        changes.fire(UpdateResource.CARS);
+        changes.fire(UpdateResource.HUMANS);
         return new OperationResponse(humansWithoutCar.size(), null);
     }
 }

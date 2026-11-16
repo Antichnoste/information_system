@@ -319,10 +319,6 @@ function connectUpdates() {
     updateTimer = null;
     pendingUpdates.clear();
     if (!user) return;
-    if (event.code === 1008 && event.reason === 'Origin not allowed') {
-      $('#sync-error').textContent = 'Сервер отклонил WebSocket-подключение.';
-      return;
-    }
     if (event.code === 1008) {
       showLogin('Сессия завершена. Войдите снова.');
       return;

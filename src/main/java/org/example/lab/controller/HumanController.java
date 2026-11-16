@@ -15,8 +15,6 @@ import org.example.lab.dto.HumanRequest;
 import org.example.lab.dto.HumanResponse;
 import org.example.lab.dto.HumanPageResponse;
 import org.example.lab.service.HumanService;
-import org.example.lab.realtime.LiveUpdates;
-import static org.example.lab.realtime.LiveUpdates.Resource.HUMANS;
 
 @Path("humans")
 @RequestScoped
@@ -25,8 +23,6 @@ import static org.example.lab.realtime.LiveUpdates.Resource.HUMANS;
 public class HumanController {
     @Inject
     HumanService humanService;
-    @Inject
-    LiveUpdates updates;
 
     @GET
     public HumanPageResponse humans(
@@ -50,25 +46,20 @@ public class HumanController {
 
     @POST
     public Response createHuman(@NotNull(message = "Тело запроса обязательно") @Valid HumanRequest input) {
-        HumanResponse created = humanService.create(input);
-        updates.publish(HUMANS);
         return Response.status(201)
-                .entity(created)
+                .entity(humanService.create(input))
                 .build();
     }
 
     @PUT
     @Path("{id}")
     public HumanResponse updateHuman(@PathParam("id") int id, @NotNull(message = "Тело запроса обязательно") @Valid HumanRequest input) {
-        HumanResponse updated = humanService.update(id, input);
-        updates.publish(HUMANS);
-        return updated;
+        return humanService.update(id, input);
     }
 
     @DELETE
     @Path("{id}")
     public void deleteHuman(@PathParam("id") int id) {
         humanService.delete(id);
-        updates.publish(HUMANS);
     }
 }

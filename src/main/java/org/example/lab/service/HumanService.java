@@ -2,6 +2,7 @@ package org.example.lab.service;
 import org.example.lab.exception.GlobalExceptionHandler;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import org.example.lab.mapper.HumanMapper;
 import org.example.lab.repository.HumanRepository;
 import org.example.lab.repository.CarRepository;
 import org.example.lab.repository.CoordinatesRepository;
+import org.example.lab.realtime.UpdateResource;
 
 @ApplicationScoped
 @Transactional
@@ -27,6 +29,8 @@ public class HumanService {
     CoordinatesRepository coordinatesRepository;
     @Inject
     HumanMapper mapper;
+    @Inject
+    Event<UpdateResource> changes;
 
     public HumanPageResponse list(int page, int size, String sort, String direction, Map<String, String> filters) {
         if (page < 0 || size < 1 || size > 100 || (long) page * size > Integer.MAX_VALUE) {
@@ -58,6 +62,7 @@ public class HumanService {
         HumanBeing human = new HumanBeing();
         fill(human, input);
         humanRepository.save(human);
+        changes.fire(UpdateResource.HUMANS);
         return mapper.toResponse(human);
     }
 
@@ -72,11 +77,13 @@ public class HumanService {
         }
         fill(human, input);
         humanRepository.flush();
+        changes.fire(UpdateResource.HUMANS);
         return mapper.toResponse(human);
     }
 
     public void delete(int id) {
         humanRepository.delete(humanRepository.findById(id));
+        changes.fire(UpdateResource.HUMANS);
     }
 
     private void fill(HumanBeing human, HumanRequest input) {

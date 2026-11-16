@@ -9,9 +9,6 @@ import org.example.lab.model.WeaponType;
 import org.example.lab.dto.HumanResponse;
 import org.example.lab.dto.OperationResponse;
 import org.example.lab.service.OperationsService;
-import org.example.lab.realtime.LiveUpdates;
-import static org.example.lab.realtime.LiveUpdates.Resource.CARS;
-import static org.example.lab.realtime.LiveUpdates.Resource.HUMANS;
 
 @Path("operations")
 @RequestScoped
@@ -20,15 +17,11 @@ import static org.example.lab.realtime.LiveUpdates.Resource.HUMANS;
 public class OperationsController {
     @Inject
     OperationsService operationsService;
-    @Inject
-    LiveUpdates updates;
 
     @DELETE
     @Path("by-weapon")
     public OperationResponse weapon(@QueryParam("weaponType") WeaponType weapon) {
-        OperationResponse result = operationsService.deleteByWeapon(weapon);
-        if (result.getCount() > 0) updates.publish(HUMANS);
-        return result;
+        return operationsService.deleteByWeapon(weapon);
     }
 
     @GET
@@ -49,16 +42,12 @@ public class OperationsController {
     @POST
     @Path("sadden")
     public OperationResponse sadden() {
-        OperationResponse result = operationsService.sadden();
-        if (result.getCount() > 0) updates.publish(HUMANS);
-        return result;
+        return operationsService.sadden();
     }
 
     @POST
     @Path("give-cars")
     public OperationResponse giveCars() {
-        OperationResponse result = operationsService.giveCars();
-        if (result.getCount() > 0) updates.publish(CARS, HUMANS);
-        return result;
+        return operationsService.giveCars();
     }
 }

@@ -2,6 +2,7 @@ package org.example.lab.service;
 import org.example.lab.exception.GlobalExceptionHandler;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import org.example.lab.dto.CarResponse;
 import org.example.lab.mapper.CarMapper;
 import org.example.lab.repository.HumanRepository;
 import org.example.lab.repository.CarRepository;
+import org.example.lab.realtime.UpdateResource;
 
 @ApplicationScoped
 @Transactional
@@ -23,6 +25,8 @@ public class CarService {
     CarRepository carRepository;
     @Inject
     CarMapper mapper;
+    @Inject
+    Event<UpdateResource> changes;
 
     public List<CarResponse> list() {
         List<CarResponse> result = new ArrayList<>();
@@ -42,6 +46,7 @@ public class CarService {
         car.cool = input.getCool();
         car.color = input.getColor();
         carRepository.save(car);
+        changes.fire(UpdateResource.CARS);
         return mapper.toResponse(car);
     }
 
@@ -58,6 +63,8 @@ public class CarService {
         car.cool = input.getCool();
         car.color = input.getColor();
         carRepository.flush();
+        changes.fire(UpdateResource.CARS);
+        changes.fire(UpdateResource.HUMANS);
         return mapper.toResponse(car);
     }
 
@@ -75,5 +82,7 @@ public class CarService {
             human.car = replacement;
         }
         carRepository.delete(car);
+        changes.fire(UpdateResource.CARS);
+        changes.fire(UpdateResource.HUMANS);
     }
 }
