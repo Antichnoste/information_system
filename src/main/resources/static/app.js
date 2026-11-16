@@ -35,6 +35,11 @@ let deletion = null;
 let resultPath = null;
 let refreshing = false;
 let revision = 0;
+let updateSocket = null;
+let reconnectTimer = null;
+let reconnectDelay = 1000;
+let updateTimer = null;
+const pendingUpdates = new Set();
 const pages = { cars: 0, coordinates: 0, results: 0 };
 const pageSize = 10;
 
@@ -214,6 +219,7 @@ async function run(target, work, container) {
 }
 
 function showLogin(message = '') {
+  disconnectUpdates();
   user = null;
   document.body.classList.add('auth-page');
   revision++;
@@ -238,6 +244,94 @@ function showApp(session) {
   $('#operation-results').hidden = true;
   $('#operation-message').textContent = '';
   navigate();
+  connectUpdates();
+}
+
+function disconnectUpdates() {
+  clearTimeout(reconnectTimer);
+  clearTimeout(updateTimer);
+  reconnectTimer = null;
+  updateTimer = null;
+  pendingUpdates.clear();
+  reconnectDelay = 1000;
+  const socket = updateSocket;
+  updateSocket = null;
+  socket?.close();
+}
+
+function scheduleReconnect() {
+  if (!user || reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connectUpdates();
+  }, reconnectDelay);
+  reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+}
+
+function connectUpdates() {
+  if (!user || updateSocket) return;
+  const url = new URL('ws/updates', location.href);
+  url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+
+  let socket;
+  try {
+    socket = new WebSocket(url);
+  } catch {
+    scheduleReconnect();
+    return;
+  }
+  updateSocket = socket;
+
+  socket.onopen = () => {
+    if (updateSocket !== socket || !user) return;
+    reconnectDelay = 1000;
+    $('#sync-error').textContent = '';
+    revision++;
+    refresh();
+  };
+
+  socket.onmessage = (event) => {
+    if (updateSocket !== socket || !user) return;
+    let message;
+    try {
+      message = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    if (!message || message.type !== 'data-changed' || !Array.isArray(message.resources)) return;
+    for (const resource of message.resources) {
+      if (['humans', 'cars', 'coordinates'].includes(resource)) pendingUpdates.add(resource);
+    }
+    if (!pendingUpdates.size || updateTimer) return;
+    updateTimer = setTimeout(() => {
+      updateTimer = null;
+      const changed = new Set(pendingUpdates);
+      pendingUpdates.clear();
+      revision++;
+      refresh(changed);
+    }, 100);
+  };
+
+  socket.onclose = (event) => {
+    if (updateSocket !== socket) return;
+    updateSocket = null;
+    clearTimeout(updateTimer);
+    updateTimer = null;
+    pendingUpdates.clear();
+    if (!user) return;
+    if (event.code === 1008 && event.reason === 'Origin not allowed') {
+      $('#sync-error').textContent = 'Сервер отклонил WebSocket-подключение.';
+      return;
+    }
+    if (event.code === 1008) {
+      showLogin('Сессия завершена. Войдите снова.');
+      return;
+    }
+    $('#sync-error').textContent = 'Нет соединения для обновлений. Переподключаемся…';
+    scheduleReconnect();
+  };
+
+  socket.onerror = () => socket.close();
 }
 
 function navigate() {
@@ -285,25 +379,33 @@ async function loadReferences() {
   refreshSelects();
 }
 
-async function refresh() {
+async function refresh(changedResources = null) {
   if (!user || refreshing) return;
   refreshing = true;
   const current = revision;
+  const full = changedResources === null;
+  const changed = changedResources || new Set();
+  const reloadCars = full || changed.has('cars');
+  const reloadCoordinates = full || changed.has('coordinates');
+  const reloadHumans = section === 'humans' && (full || changed.has('humans'));
+  const reloadResults = section === 'operations' && resultPath && (full || changed.has('humans'));
+  const reloadDetails = full || (details && changed.has(details.kind));
   try {
     const query = new URLSearchParams(filters);
     query.set('page', page);
     const [newCars, newCoordinates, humans, results] = await Promise.all([
-      api('cars'),
-      api('coordinates'),
-      section === 'humans' ? api(`humans?${query}`) : null,
-      section === 'operations' && resultPath ? api(resultPath) : null,
+      reloadCars ? api('cars') : null,
+      reloadCoordinates ? api('coordinates') : null,
+      reloadHumans ? api(`humans?${query}`) : null,
+      reloadResults ? api(resultPath) : null,
     ]);
     if (!user || current !== revision) return;
-    cars = newCars;
-    coordinates = newCoordinates;
-    refreshSelects();
-    if (section === 'cars') renderPagedTable('cars', 'cars', cars);
-    if (section === 'coordinates') renderPagedTable('coordinates', 'coordinates', coordinates);
+    if (reloadCars) cars = newCars;
+    if (reloadCoordinates) coordinates = newCoordinates;
+    if (reloadCars || reloadCoordinates) refreshSelects();
+    if (section === 'cars' && reloadCars) renderPagedTable('cars', 'cars', cars);
+    if (section === 'coordinates' && reloadCoordinates)
+      renderPagedTable('coordinates', 'coordinates', coordinates);
     if (humans) {
       const count = Math.max(1, Math.ceil(humans.total / humans.size));
       if (page >= count) {
@@ -316,7 +418,7 @@ async function refresh() {
         $('#human-next').disabled = page >= count - 1;
       }
     }
-    if (section === 'operations' && resultPath) {
+    if (reloadResults) {
       $('#operation-results').hidden = false;
       renderPagedTable(
         'results',
@@ -324,8 +426,8 @@ async function refresh() {
         Array.isArray(results) ? results : results ? [results] : [],
       );
     }
-    await refreshDetails();
-    $('#sync-error').textContent = '';
+    if (reloadDetails) await refreshDetails();
+    if (updateSocket?.readyState === WebSocket.OPEN) $('#sync-error').textContent = '';
   } catch (error) {
     if (user) showError($('#sync-error'), error);
   } finally {
@@ -728,7 +830,12 @@ document.querySelectorAll('dialog').forEach((dialog) =>
   }),
 );
 window.addEventListener('hashchange', navigate);
-setInterval(refresh, 2000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && user) {
+    revision++;
+    refresh();
+  }
+});
 run($('#auth-error'), async () => {
   try {
     showApp(await api('auth/session'));

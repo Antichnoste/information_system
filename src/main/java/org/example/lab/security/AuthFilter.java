@@ -1,0 +1,27 @@
+package org.example.lab.security;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.ext.Provider;
+import org.example.lab.exception.GlobalExceptionHandler;
+
+@Provider
+public class AuthFilter implements ContainerRequestFilter {
+    @Context
+    HttpServletRequest request;
+
+    @Override
+    public void filter(ContainerRequestContext context) {
+        String path = context.getUriInfo().getPath().replaceFirst("^/+", "");
+        if (path.equals("auth/login") || path.equals("auth/register")) {
+            return;
+        }
+
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("username") == null) {
+            context.abortWith(GlobalExceptionHandler.response(401, "Войдите в систему"));
+        }
+    }
+}
