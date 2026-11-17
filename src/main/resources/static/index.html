@@ -43,6 +43,7 @@
         <a href="#humans">Персонажи</a>
         <a href="#cars">Автомобили</a>
         <a href="#coordinates">Координаты</a>
+        <a href="#imports">Импорт и история</a>
         <a href="#operations">Специальные операции</a>
       </nav>
       <p>
@@ -56,17 +57,6 @@
         <section id="humans" hidden>
           <h2>Персонажи</h2>
           <button type="button" data-create="humans">Добавить персонажа</button>
-          <form id="import-form">
-            <fieldset>
-              <legend>Импорт персонажей</legend>
-              <label>
-                JSON-файл
-                <input type="file" name="file" accept=".json,application/json" required />
-              </label>
-              <button type="submit">Импортировать</button>
-              <p id="import-message" role="status"></p>
-            </fieldset>
-          </form>
           <form id="human-filters">
             <fieldset>
               <legend>Фильтры (по части строки)</legend>
@@ -150,6 +140,28 @@
           <p>Одни координаты могут быть связаны с несколькими персонажами.</p>
           <div id="coordinates-table" class="table-scroll"></div>
           <p id="coordinates-pager"></p>
+        </section>
+        <section id="imports" hidden>
+          <h2>Импорт и история</h2>
+          <form id="import-form">
+            <fieldset>
+              <legend>Импорт персонажей</legend>
+              <label>
+                JSON-файл
+                <input type="file" name="file" accept=".json,application/json" required />
+              </label>
+              <button type="submit">Импортировать</button>
+              <p id="import-message" role="status"></p>
+            </fieldset>
+          </form>
+          <h3>История импорта</h3>
+          <button id="history-refresh" type="button">Обновить</button>
+          <div id="history-table" class="table-scroll"></div>
+          <p>
+            <button id="history-prev" type="button">Назад</button>
+            <span id="history-page"></span>
+            <button id="history-next" type="button">Вперёд</button>
+          </p>
         </section>
         <section id="operations" hidden>
           <h2>Специальные операции</h2>

@@ -24,6 +24,7 @@ const columns = {
 let user = null;
 let section = 'humans';
 let page = 0;
+let historyPage = 0;
 let filters = new URLSearchParams(new FormData($('#human-filters')));
 let cars = [];
 let coordinates = [];
@@ -154,6 +155,37 @@ function renderPagedTable(key, kind, items) {
   );
 }
 
+function renderHistory(history) {
+  const rows = history.items.map((item) => {
+    const cells = [
+      item.id,
+      item.status === 'SUCCESS' ? 'Успешно' : 'Ошибка',
+      item.username,
+      item.addedCount ?? '—',
+      item.errorMessage ?? '—',
+    ].map((value) => `<td>${escapeHtml(value)}</td>`).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  setHtml($('#history-table'), `
+    <table>
+      <thead><tr>
+        <th scope="col">ID</th>
+        <th scope="col">Статус</th>
+        <th scope="col">Пользователь</th>
+        <th scope="col">Добавлено персонажей</th>
+        <th scope="col">Причина ошибки</th>
+      </tr></thead>
+      <tbody>${rows || '<tr><td colspan="5">Операций импорта нет.</td></tr>'}</tbody>
+    </table>
+  `);
+
+  const count = Math.max(1, Math.ceil(history.total / history.size));
+  $('#history-page').textContent = `Страница ${historyPage + 1} из ${count}. Всего: ${history.total}.`;
+  $('#history-prev').disabled = historyPage === 0;
+  $('#history-next').disabled = historyPage >= count - 1;
+}
+
 async function api(path, method = 'GET', body) {
   let response;
   const isFile = body instanceof FormData;
@@ -233,6 +265,7 @@ function showLogin(message = '') {
 
 function showApp(session) {
   user = session.username;
+  historyPage = 0;
   document.body.classList.remove('auth-page');
   revision++;
   $('#username').textContent = user;
@@ -334,7 +367,7 @@ function connectUpdates() {
 
 function navigate() {
   section = location.hash.slice(1);
-  if (!['humans', 'cars', 'coordinates', 'operations'].includes(section)) section = 'humans';
+  if (!['humans', 'cars', 'coordinates', 'imports', 'operations'].includes(section)) section = 'humans';
   revision++;
   document.querySelectorAll('main > section').forEach((element) => {
     element.hidden = element.id !== section;
@@ -386,16 +419,18 @@ async function refresh(changedResources = null) {
   const reloadCars = full || changed.has('cars');
   const reloadCoordinates = full || changed.has('coordinates');
   const reloadHumans = section === 'humans' && (full || changed.has('humans'));
+  const reloadHistory = section === 'imports' && full;
   const reloadResults = section === 'operations' && resultPath && (full || changed.has('humans'));
   const reloadDetails = full || (details && changed.has(details.kind));
   try {
     const query = new URLSearchParams(filters);
     query.set('page', page);
-    const [newCars, newCoordinates, humans, results] = await Promise.all([
+    const [newCars, newCoordinates, humans, results, history] = await Promise.all([
       reloadCars ? api('cars') : null,
       reloadCoordinates ? api('coordinates') : null,
       reloadHumans ? api(`humans?${query}`) : null,
       reloadResults ? api(resultPath) : null,
+      reloadHistory ? api(`imports?page=${historyPage}&size=10`) : null,
     ]);
     if (!user || current !== revision) return;
     if (reloadCars) cars = newCars;
@@ -414,6 +449,15 @@ async function refresh(changedResources = null) {
         $('#human-page').textContent = `Страница ${page + 1} из ${count}. Всего: ${humans.total}.`;
         $('#human-prev').disabled = page === 0;
         $('#human-next').disabled = page >= count - 1;
+      }
+    }
+    if (history) {
+      const count = Math.max(1, Math.ceil(history.total / history.size));
+      if (historyPage >= count) {
+        historyPage = count - 1;
+        revision++;
+      } else {
+        renderHistory(history);
       }
     }
     if (reloadResults) {
@@ -617,13 +661,17 @@ $('#import-form').addEventListener('submit', (event) => {
       if (file.size > 2_000_000) throw new Error('Файл больше 2 МБ.');
       const body = new FormData();
       body.append('file', file);
-      const result = await api('imports', 'POST', body);
-      $('#import-message').classList.remove('error');
-      $('#import-message').textContent =
-        `Импорт № ${result.id}: добавлено персонажей — ${result.addedCount}.`;
-      form.reset();
-      revision++;
-      refresh();
+      try {
+        const result = await api('imports', 'POST', body);
+        $('#import-message').classList.remove('error');
+        $('#import-message').textContent =
+          `Импорт № ${result.id}: добавлено персонажей — ${result.addedCount}.`;
+        form.reset();
+      } finally {
+        historyPage = 0;
+        revision++;
+        refresh();
+      }
     },
     form,
   );
@@ -763,6 +811,21 @@ $('#human-prev').addEventListener('click', () => {
 });
 $('#human-next').addEventListener('click', () => {
   page++;
+  revision++;
+  refresh();
+});
+
+$('#history-refresh').addEventListener('click', () => {
+  revision++;
+  refresh();
+});
+$('#history-prev').addEventListener('click', () => {
+  historyPage = Math.max(0, historyPage - 1);
+  revision++;
+  refresh();
+});
+$('#history-next').addEventListener('click', () => {
+  historyPage++;
   revision++;
   refresh();
 });

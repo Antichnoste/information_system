@@ -5,7 +5,10 @@ import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.WebApplicationException;
+import java.util.ArrayList;
 import java.util.List;
+import org.example.lab.dto.ImportHistoryPageResponse;
+import org.example.lab.dto.ImportHistoryResponse;
 import org.example.lab.dto.ImportHumanRequest;
 import org.example.lab.exception.GlobalExceptionHandler;
 import org.example.lab.model.AppUser;
@@ -13,6 +16,7 @@ import org.example.lab.model.Car;
 import org.example.lab.model.HumanBeing;
 import org.example.lab.model.ImportHistory;
 import org.example.lab.model.ImportStatus;
+import org.example.lab.model.UserRole;
 import org.example.lab.realtime.UpdateResource;
 import org.example.lab.repository.AppUserRepository;
 import org.example.lab.repository.CarRepository;
@@ -34,6 +38,29 @@ public class ImportService {
     ImportHistoryRepository historyRepository;
     @Inject
     Event<UpdateResource> changes;
+
+    public ImportHistoryPageResponse history(String username, int page, int size) {
+        if (page < 0 || size < 1 || size > 100 || (long) page * size > Integer.MAX_VALUE) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(400,
+                    "Номер страницы должен быть от 0, размер — от 1 до 100, смещение — не больше 2147483647"));
+        }
+
+        AppUser user = requireUser(username);
+        Long userId = (user.getRole() == UserRole.ADMIN) ? null : user.getId();
+        long total = historyRepository.count(userId);
+        List<ImportHistoryResponse> items = new ArrayList<>();
+        if ((long) page * size < total) {
+            for (ImportHistory history : historyRepository.findPage(userId, page, size)) {
+                items.add(new ImportHistoryResponse(
+                        history.id,
+                        history.status,
+                        history.user.getUsername(),
+                        history.status == ImportStatus.SUCCESS ? history.addedCount : null,
+                        history.status == ImportStatus.FAILED ? history.errorMessage : null));
+            }
+        }
+        return new ImportHistoryPageResponse(items, total, page, size);
+    }
 
     public ImportHistory importHumans(String username, List<ImportHumanRequest> records) {
         AppUser user = requireUser(username);
