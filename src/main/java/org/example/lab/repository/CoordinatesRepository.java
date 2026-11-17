@@ -25,6 +25,15 @@ public class CoordinatesRepository {
         return coordinates;
     }
 
+    public Coordinates findByValues(Long x, Float y) {
+        List<Coordinates> found = em.createQuery("SELECT c FROM Coordinates c WHERE c.x = :x AND c.y = :y ORDER BY c.id", Coordinates.class)
+                .setParameter("x", x)
+                .setParameter("y", y)
+                .setMaxResults(1)
+                .getResultList();
+        return found.isEmpty() ? null : found.get(0);
+    }
+
     public void save(Coordinates coordinates) {
         em.persist(coordinates);
     }

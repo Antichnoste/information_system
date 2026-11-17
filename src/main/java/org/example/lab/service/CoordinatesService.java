@@ -41,10 +41,8 @@ public class CoordinatesService {
     }
 
     public CoordinatesResponse create(CoordinatesRequest input) {
-        Coordinates coordinates = new Coordinates();
-        coordinates.x = input.getX();
-        coordinates.y = input.getY();
-        coordinatesRepository.save(coordinates);
+        requireFreePoint(input.getX(), input.getY(), null);
+        Coordinates coordinates = createPoint(input.getX(), input.getY());
         changes.fire(UpdateResource.COORDINATES);
         return mapper.toResponse(coordinates);
     }
@@ -57,12 +55,18 @@ public class CoordinatesService {
         if (!input.getVersion().equals(coordinates.version)) {
             throw new WebApplicationException(GlobalExceptionHandler.response(409, "Объект уже изменён другим пользователем. Закройте форму и откройте её заново."));
         }
+        requireFreePoint(input.getX(), input.getY(), coordinates.id);
         coordinates.x = input.getX();
         coordinates.y = input.getY();
         coordinatesRepository.flush();
         changes.fire(UpdateResource.COORDINATES);
         changes.fire(UpdateResource.HUMANS);
         return mapper.toResponse(coordinates);
+    }
+
+    public Coordinates findOrCreate(Long x, Float y) {
+        Coordinates coordinates = coordinatesRepository.findByValues(x, y);
+        return (coordinates == null) ? createPoint(x, y) : coordinates;
     }
 
     public void delete(long id, Long replacementId) {
@@ -81,5 +85,20 @@ public class CoordinatesService {
         coordinatesRepository.delete(coordinates);
         changes.fire(UpdateResource.COORDINATES);
         changes.fire(UpdateResource.HUMANS);
+    }
+
+    private void requireFreePoint(Long x, Float y, Long currentId) {
+        Coordinates existing = coordinatesRepository.findByValues(x, y);
+        if (existing != null && (currentId == null || !existing.id.equals(currentId))) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(409, "Точка с такими координатами уже существует"));
+        }
+    }
+
+    private Coordinates createPoint(Long x, Float y) {
+        Coordinates coordinates = new Coordinates();
+        coordinates.x = x;
+        coordinates.y = y;
+        coordinatesRepository.save(coordinates);
+        return coordinates;
     }
 }
