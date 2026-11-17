@@ -59,7 +59,7 @@ public class HumanController {
 
     @DELETE
     @Path("{id}")
-    public void deleteHuman(@PathParam("id") int id) {
-        humanService.delete(id);
+    public void deleteHuman(@PathParam("id") int id, @QueryParam("version") Long version) {
+        humanService.delete(id, version);
     }
 }

@@ -68,8 +68,15 @@ public class CarService {
         return mapper.toResponse(car);
     }
 
-    public void delete(long id, Long replacementId) {
+    public void delete(long id, Long replacementId, Long expectedVersion) {
         Car car = carRepository.findById(id);
+        if (expectedVersion == null) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(400, "Укажите версию объекта"));
+        }
+        if (!expectedVersion.equals(car.version)) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(409,
+                    "Объект уже изменён другим пользователем. Закройте форму и откройте её заново."));
+        }
         if (replacementId != null && replacementId == id) {
             throw new WebApplicationException(GlobalExceptionHandler.response(400, "Выберите другой автомобиль"));
         }
@@ -82,6 +89,7 @@ public class CarService {
             human.car = replacement;
         }
         carRepository.delete(car);
+        carRepository.flush();
         changes.fire(UpdateResource.CARS);
         changes.fire(UpdateResource.HUMANS);
     }

@@ -50,8 +50,9 @@ public class CarController {
     @Path("{id}")
     public void deleteCar(
             @PathParam("id") long id,
-            @QueryParam("replacementId") Long replacement) {
+            @QueryParam("replacementId") Long replacement,
+            @QueryParam("version") Long version) {
 
-        carService.delete(id, replacement);
+        carService.delete(id, replacement, version);
     }
 }

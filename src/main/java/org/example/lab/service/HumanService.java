@@ -81,8 +81,17 @@ public class HumanService {
         return mapper.toResponse(human);
     }
 
-    public void delete(int id) {
-        humanRepository.delete(humanRepository.findById(id));
+    public void delete(int id, Long expectedVersion) {
+        HumanBeing human = humanRepository.findById(id);
+        if (expectedVersion == null) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(400, "Укажите версию объекта"));
+        }
+        if (!expectedVersion.equals(human.version)) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(409,
+                    "Объект уже изменён другим пользователем. Закройте форму и откройте её заново."));
+        }
+        humanRepository.delete(human);
+        humanRepository.flush();
         changes.fire(UpdateResource.HUMANS);
     }
 

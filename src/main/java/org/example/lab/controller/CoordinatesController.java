@@ -49,7 +49,8 @@ public class CoordinatesController {
     @Path("{id}")
     public void deleteCoordinates(
             @PathParam("id") long id,
-            @QueryParam("replacementId") Long replacement) {
-        coordinatesService.delete(id, replacement);
+            @QueryParam("replacementId") Long replacement,
+            @QueryParam("version") Long version) {
+        coordinatesService.delete(id, replacement, version);
     }
 }

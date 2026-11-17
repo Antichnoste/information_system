@@ -69,8 +69,15 @@ public class CoordinatesService {
         return (coordinates == null) ? createPoint(x, y) : coordinates;
     }
 
-    public void delete(long id, Long replacementId) {
+    public void delete(long id, Long replacementId, Long expectedVersion) {
         Coordinates coordinates = coordinatesRepository.findById(id);
+        if (expectedVersion == null) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(400, "Укажите версию объекта"));
+        }
+        if (!expectedVersion.equals(coordinates.version)) {
+            throw new WebApplicationException(GlobalExceptionHandler.response(409,
+                    "Объект уже изменён другим пользователем. Закройте форму и откройте её заново."));
+        }
         if (replacementId != null && replacementId == id) {
             throw new WebApplicationException(GlobalExceptionHandler.response(400, "Выберите другие координаты"));
         }
@@ -83,6 +90,7 @@ public class CoordinatesService {
             human.coordinates = replacement;
         }
         coordinatesRepository.delete(coordinates);
+        coordinatesRepository.flush();
         changes.fire(UpdateResource.COORDINATES);
         changes.fire(UpdateResource.HUMANS);
     }

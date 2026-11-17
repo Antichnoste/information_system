@@ -572,7 +572,7 @@ async function openEditor(kind, id = null) {
 async function openDelete(kind, id) {
   const item = await api(`${kind}/${id}`);
   if (kind !== 'humans') await loadReferences();
-  deletion = { kind, id };
+  deletion = { kind, id, version: item.version };
   resetForm($('#delete-form'));
   $('#delete-title').textContent = `Удалить: ${titles[kind]} № ${id}`;
   $('#delete-description').textContent =
@@ -757,9 +757,9 @@ $('#delete-form').addEventListener('submit', (event) => {
     async () => {
       const { kind, id } = deletion;
       const replacementId = $('#delete-form').elements.replacementId.value;
-      const query =
-        kind !== 'humans' && replacementId ? `?${new URLSearchParams({ replacementId })}` : '';
-      await api(`${kind}/${id}${query}`, 'DELETE');
+      const query = new URLSearchParams({ version: deletion.version });
+      if (kind !== 'humans' && replacementId) query.set('replacementId', replacementId);
+      await api(`${kind}/${id}?${query}`, 'DELETE');
       $('#delete-dialog').close();
       changed(`${titles[kind]} № ${id}: удалено.`);
     },
