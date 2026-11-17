@@ -56,6 +56,17 @@
         <section id="humans" hidden>
           <h2>Персонажи</h2>
           <button type="button" data-create="humans">Добавить персонажа</button>
+          <form id="import-form">
+            <fieldset>
+              <legend>Импорт персонажей</legend>
+              <label>
+                JSON-файл
+                <input type="file" name="file" accept=".json,application/json" required />
+              </label>
+              <button type="submit">Импортировать</button>
+              <p id="import-message" role="status"></p>
+            </fieldset>
+          </form>
           <form id="human-filters">
             <fieldset>
               <legend>Фильтры (по части строки)</legend>

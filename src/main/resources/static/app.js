@@ -156,14 +156,15 @@ function renderPagedTable(key, kind, items) {
 
 async function api(path, method = 'GET', body) {
   let response;
+  const isFile = body instanceof FormData;
   try {
     response = await fetch(`api/${path}`, {
       method,
       credentials: 'same-origin',
       cache: 'no-store',
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
+      headers: body === undefined || isFile ? {} : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : isFile ? body : JSON.stringify(body),
+      signal: isFile ? undefined : AbortSignal.timeout(15000),
     });
   } catch {
     throw new Error('Не удалось связаться с сервером. Проверьте подключение и повторите попытку.');
@@ -239,6 +240,7 @@ function showApp(session) {
   $('#app').hidden = false;
   $('#auth-form').reset();
   $('#message').textContent = '';
+  $('#import-message').textContent = '';
   $('#sync-error').textContent = '';
   resultPath = null;
   $('#operation-results').hidden = true;
@@ -603,6 +605,29 @@ $('#logout').addEventListener('click', () =>
     showLogin();
   }),
 );
+
+$('#import-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  run(
+    $('#import-message'),
+    async () => {
+      const file = form.elements.file.files[0];
+      if (!file) throw new Error('Выберите JSON-файл.');
+      if (file.size > 2_000_000) throw new Error('Файл больше 2 МБ.');
+      const body = new FormData();
+      body.append('file', file);
+      const result = await api('imports', 'POST', body);
+      $('#import-message').classList.remove('error');
+      $('#import-message').textContent =
+        `Импорт № ${result.id}: добавлено персонажей — ${result.addedCount}.`;
+      form.reset();
+      revision++;
+      refresh();
+    },
+    form,
+  );
+});
 
 humanForm.addEventListener('submit', (event) => {
   event.preventDefault();

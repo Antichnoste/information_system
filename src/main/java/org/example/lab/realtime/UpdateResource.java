@@ -3,15 +3,16 @@ package org.example.lab.realtime;
 public enum UpdateResource {
     HUMANS("humans"),
     CARS("cars"),
-    COORDINATES("coordinates");
+    COORDINATES("coordinates"),
+    ALL("humans", "cars", "coordinates");
 
-    private final String path;
+    private final String[] paths;
 
-    UpdateResource(String path) {
-        this.path = path;
+    UpdateResource(String... paths) {
+        this.paths = paths;
     }
 
-    public String getPath() {
-        return path;
+    public String[] getPaths() {
+        return paths;
     }
 }
