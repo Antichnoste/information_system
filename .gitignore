@@ -52,4 +52,7 @@ Dockerfile
 src/test
 
 *.md
-README.md
+
+# Local JMeter accounts and fixture IDs
+scripts/jmeter/users.local.csv
+scripts/jmeter/local.properties

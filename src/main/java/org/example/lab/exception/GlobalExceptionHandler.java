@@ -81,9 +81,13 @@ public class GlobalExceptionHandler implements ExceptionMapper<Exception> {
                         .build();
             }
 
-            if (cause instanceof SQLException error && error.getSQLState() != null
-                    && error.getSQLState().startsWith("23")) {
-                return response(409,"Операция нарушает ограничения данных или связей");
+            if (cause instanceof SQLException error) {
+                if ("40001".equals(error.getSQLState())) {
+                    return response(409, "Конфликт параллельных операций. Повторите запрос.");
+                }
+                if (error.getSQLState() != null && error.getSQLState().startsWith("23")) {
+                    return response(409,"Операция нарушает ограничения данных или связей");
+                }
             }
         }
 

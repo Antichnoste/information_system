@@ -20,6 +20,7 @@ import org.example.lab.model.UserRole;
 import org.example.lab.realtime.UpdateResource;
 import org.example.lab.repository.AppUserRepository;
 import org.example.lab.repository.CarRepository;
+import org.example.lab.repository.CoordinatesRepository;
 import org.example.lab.repository.HumanRepository;
 import org.example.lab.repository.ImportHistoryRepository;
 
@@ -30,6 +31,8 @@ public class ImportService {
     AppUserRepository users;
     @Inject
     CoordinatesService coordinates;
+    @Inject
+    CoordinatesRepository coordinatesRepository;
     @Inject
     CarRepository cars;
     @Inject
@@ -63,6 +66,7 @@ public class ImportService {
     }
 
     public ImportHistory importHumans(String username, List<ImportHumanRequest> records) {
+        coordinatesRepository.useSerializableIsolation();
         AppUser user = requireUser(username);
         for (ImportHumanRequest input : records) {
             HumanBeing human = new HumanBeing();

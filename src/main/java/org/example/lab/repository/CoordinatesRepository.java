@@ -34,6 +34,11 @@ public class CoordinatesRepository {
         return found.isEmpty() ? null : found.get(0);
     }
 
+    public void useSerializableIsolation() {
+        // вызываю до первого SELECT или INSERT в транзакции. меняем уровень изоляции
+        em.createNativeQuery("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE").executeUpdate();
+    }
+
     public void save(Coordinates coordinates) {
         em.persist(coordinates);
     }

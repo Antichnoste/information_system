@@ -41,6 +41,7 @@ public class CoordinatesService {
     }
 
     public CoordinatesResponse create(CoordinatesRequest input) {
+        coordinatesRepository.useSerializableIsolation();
         requireFreePoint(input.getX(), input.getY(), null);
         Coordinates coordinates = createPoint(input.getX(), input.getY());
         changes.fire(UpdateResource.COORDINATES);
@@ -48,6 +49,7 @@ public class CoordinatesService {
     }
 
     public CoordinatesResponse update(long id, CoordinatesRequest input) {
+        coordinatesRepository.useSerializableIsolation();
         Coordinates coordinates = coordinatesRepository.findById(id);
         if (input.getVersion() == null) {
             throw new WebApplicationException(GlobalExceptionHandler.response(400, "Укажите версию объекта"));
@@ -70,6 +72,7 @@ public class CoordinatesService {
     }
 
     public void delete(long id, Long replacementId, Long expectedVersion) {
+        coordinatesRepository.useSerializableIsolation();
         Coordinates coordinates = coordinatesRepository.findById(id);
         if (expectedVersion == null) {
             throw new WebApplicationException(GlobalExceptionHandler.response(400, "Укажите версию объекта"));
